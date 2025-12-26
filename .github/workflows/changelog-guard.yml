@@ -1,0 +1,63 @@
+name: changelog-guard
+
+on:
+  pull_request:
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify changelog format
+        run: ./scripts/verify_changelog.sh
+
+      - name: Verify spec.lock
+        run: ./scripts/verify_spec_lock.sh
+
+      - name: Require changelog update when web UX/behavior changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          echo "Diff: ${BASE_SHA}..${HEAD_SHA}"
+          changed="$(git diff --name-only "${BASE_SHA}" "${HEAD_SHA}")"
+          echo "${changed}"
+
+          changelog_changed=0
+          if echo "${changed}" | grep -Fxq 'CHANGELOG.md'; then
+            changelog_changed=1
+          fi
+
+          # Categories that typically change user-visible behavior:
+          # - routing, pages, UI, API interactions, auth/session behavior, RSVP flows
+          requires_changelog=0
+          if echo "${changed}" | grep -Eq '^(src/|app/|pages/|components/|lib/|hooks/|routes/)'; then
+            requires_changelog=1
+          fi
+          if echo "${changed}" | grep -Eq '^(public/)'; then
+            requires_changelog=1
+          fi
+          if echo "${changed}" | grep -Eq '^(Dockerfile|docker-compose\.yml|Makefile|package\.json|package-lock\.json|pnpm-lock\.yaml|yarn\.lock|next\.config\.)'; then
+            requires_changelog=1
+          fi
+          if echo "${changed}" | grep -Eq '^(\.env(\.|$)|\.env\.example$)'; then
+            requires_changelog=1
+          fi
+
+          if [[ "${requires_changelog}" -eq 1 && "${changelog_changed}" -ne 1 ]]; then
+            echo "ERROR: Web app UX/behavior likely changed, but CHANGELOG.md was not updated." >&2
+            echo "If you changed routing/pages/UI, API interactions, auth/session behavior, RSVP flows, or runtime config," >&2
+            echo "please add a short note under '## [Unreleased]' in CHANGELOG.md." >&2
+            exit 1
+          fi
+
+          echo "OK: changelog guard passed."
+
+
