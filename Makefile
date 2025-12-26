@@ -1,4 +1,27 @@
-.PHONY: changelog-verify changelog-release release-help
+.PHONY: help ci changelog-verify changelog-release release-help
+
+help:
+	@echo "CI / verification:"
+	@echo "  make ci"
+	@echo ""
+	@echo "Changelog / releasing:"
+	@echo "  make changelog-verify"
+	@echo "  make changelog-release VERSION=0.6.0"
+	@echo "Then commit, tag v0.6.0, and push the tag."
+
+# Canonical "green" definition for this repo.
+# Today, this repo is mostly release plumbing; when the Next.js app lands, this will
+# automatically start enforcing npm install/lint/test/build as well.
+ci: changelog-verify
+	@if [ -f package.json ]; then \
+		echo "Node checks (install + lint + test + build)..."; \
+		if [ -f package-lock.json ]; then npm ci; else npm install; fi; \
+		npm run lint --if-present; \
+		npm test --if-present; \
+		npm run build --if-present; \
+	else \
+		echo "NOTE: No package.json; skipping Node checks."; \
+	fi
 
 changelog-verify:
 	@./scripts/verify_changelog.sh
@@ -12,10 +35,6 @@ changelog-release:
 	@./scripts/release_changelog.sh "$(VERSION)"
 
 release-help:
-	@echo "Web app releases:"
-	@echo "  1) Update spec.lock to the spec tag targeted (e.g. v1.2.3)"
-	@echo "  2) Add Unreleased notes in CHANGELOG.md (pages/routes/auth/session/RSVP/API UX)"
-	@echo "  3) make changelog-release VERSION=0.6.0"
-	@echo "  4) Commit CHANGELOG.md (+ spec.lock if changed), tag v0.6.0, push tag"
+	@$(MAKE) help
 
 
