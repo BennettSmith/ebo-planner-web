@@ -98,6 +98,33 @@ UI-only improvements (layout, styling, copy) may skip step (1).
 
 If a UI feature would require a new endpoint, a changed request/response shape, new validation rules, or any new/changed use-case behavior, step (1) is mandatory.
 
+## 7.1 Development workflow (mandatory)
+
+### 7.1.1 Branches only
+
+- All work MUST happen on a branch (no direct commits to `main`).
+- Branch names MUST be: `{type}/{slug}`
+  - `{type}` MUST be one of: `chore`, `bug`, `refactor`, `feature`
+  - `{slug}` MUST be a short, lowercase, hyphenated description
+  - Examples:
+    - `feature/trip-list-page`
+    - `bug/rsvp-form-validation`
+    - `refactor/api-client-hooks`
+    - `chore/ci-target-wiring`
+
+### 7.1.2 Pre-flight before PR
+
+- Before creating or updating a PR, you MUST run `make ci` locally and it MUST pass.
+
+### 7.1.3 Pull requests required
+
+- Every change MUST be delivered via a pull request.
+- CI must be green before merge (required checks).
+
+### 7.1.4 Automation via `gh`
+
+- Cursor agents SHOULD use the GitHub CLI (`gh`) to create PRs, set titles/descriptions, and enable auto-merge once checks pass.
+
 ## 8. Versioning & deployment
 
 - Web app versioning is independent of spec and service.
