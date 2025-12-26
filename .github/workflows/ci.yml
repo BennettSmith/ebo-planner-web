@@ -1,0 +1,43 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Node setup is conditional since this repo may not yet have package.json.
+      - name: Detect Node project
+        id: node
+        shell: bash
+        run: |
+          if [ -f package.json ]; then
+            echo "has_package_json=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_package_json=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node
+        if: steps.node.outputs.has_package_json == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+
+      - name: CI
+        run: make ci
+
+
