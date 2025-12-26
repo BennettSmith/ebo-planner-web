@@ -21,6 +21,8 @@ This web app is not the primary planning tool.
 
 The web app must not rely on undocumented or unspecified service behavior.
 
+**We practice spec-first development.** All requirements changes — new features, changes to behavior defined by a use case, and API contract changes — **must originate in the spec repo**. This repo may only implement/consume those changes after updating `spec.lock`.
+
 ## 3. Scope
 
 ### 3.1 Allowed content
@@ -93,6 +95,8 @@ If a feature begins to resemble “planning,” it likely belongs in the CLI.
 5) Update UI
 
 UI-only improvements (layout, styling, copy) may skip step (1).
+
+If a UI feature would require a new endpoint, a changed request/response shape, new validation rules, or any new/changed use-case behavior, step (1) is mandatory.
 
 ## 8. Versioning & deployment
 
