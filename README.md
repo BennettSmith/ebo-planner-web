@@ -1,5 +1,7 @@
 # ebo-planner-web
 
+TBC: Create the web app
+
 ## Changelog & releases
 
 - **For PRs**: update `CHANGELOG.md` under **`## [Unreleased]`** with a short note for user-visible web changes (pages/routes/auth/session/RSVP flows/API UX).
