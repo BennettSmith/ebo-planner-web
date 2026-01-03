@@ -5,6 +5,11 @@
 This repository contains the **member-facing web application** for the
 Overland Trip Planning system.
 
+It is built as a **Single Page Application (SPA)** with a **Backend-for-Frontend (BFF)**:
+
+- The **SPA** runs in the browser and renders the UI.
+- The **BFF** runs on **Cloudflare Pages Functions** and is the browser’s only backend.
+
 It exists to:
 
 - Allow members to discover visible trips
@@ -16,8 +21,9 @@ This web app is not the primary planning tool.
 
 ## 2. Source of Truth
 
-- API contract, domain language, and behavior are defined in the **spec repo**.
-- This repo consumes a pinned spec version via `spec.lock`.
+- **Product behavior, domain language, and API contracts** are defined in the **spec repo**.
+- This repo consumes a pinned spec version via `spec.lock` (mandatory).
+- **Web hosting + SPA/BFF architecture decisions** are defined in `ARCHITECTURE_SPA_BFF.md`.
 
 The web app must not rely on undocumented or unspecified service behavior.
 
@@ -29,16 +35,20 @@ The web app must not rely on undocumented or unspecified service behavior.
 
 - UI components and pages
 - Client-side routing and state management
-- API client code generated from OpenAPI
-- Authentication and session management
+- BFF routes and handlers (`/auth/*`, `/api/*`) implemented as Cloudflare Pages Functions
+- Authentication and session management **in the BFF**
+- OpenAPI-derived TypeScript **types** used for request/response validation and safety
 - Accessibility, performance, and UX concerns
 
 ### 3.2 Disallowed content
 
-- Service implementation logic
-- API contract definitions
+- Planner service implementation logic
+- API contract definitions or behavior changes outside the spec repo
 - Organizer-only workflows (trip drafting, publishing, canceling)
 - Business rules not defined in the spec
+- OAuth flows, token storage, or refresh logic in the SPA
+- Exposing access/refresh tokens to browser JavaScript (no localStorage/sessionStorage tokens)
+- Direct browser-to-Planner-API or browser-to-AuthGenie calls (the browser talks to the BFF only)
 
 ## 4. Product boundaries
 
@@ -62,12 +72,21 @@ If a feature begins to resemble “planning,” it likely belongs in the CLI.
 ## 5. Architectural principles
 
 - **Spec-first client**
-  - API interactions are generated from OpenAPI
+  - API shapes are derived from OpenAPI (via pinned spec)
 - **Read-optimized**
   - Emphasize fast rendering and caching
+- **Same-origin SPA + BFF**
+  - No CORS (browser talks to same-origin BFF endpoints)
 - **Minimal client-side business logic**
   - The service enforces truth
   - The UI reflects state, not invents it
+- **BFF owns authentication**
+  - OAuth never runs in the SPA
+  - The SPA never sees tokens
+  - Auth state is represented via **HttpOnly cookies** only
+- **Server-side sessions**
+  - Session ID stored in an HttpOnly cookie
+  - Session data stored server-side (per `ARCHITECTURE_SPA_BFF.md`)
 - **Accessible by default**
   - Keyboard navigation
   - Screen reader compatibility
@@ -78,20 +97,21 @@ If a feature begins to resemble “planning,” it likely belongs in the CLI.
 ### 6.1 Spec pinning
 
 - `spec.lock` defines the exact spec version this web app targets.
-- Generated client code must be derived from that version only.
+- Any generated types and any checked-in OpenAPI inputs must be derived from that version only.
 
 ### 6.2 Error handling
 
 - API errors must be surfaced faithfully
 - Authorization failures must be explicit and user-friendly
 - The UI must not assume success paths
+- The SPA must treat authentication as an opaque state (logged-in vs logged-out), not as token possession.
 
 ## 7. Change workflow
 
 1) Spec repo change (if behavior/contract changes)
 2) Tag spec
 3) Update `spec.lock`
-4) Regenerate client
+4) Regenerate OpenAPI-derived types (when applicable)
 5) Update UI
 
 UI-only improvements (layout, styling, copy) may skip step (1).
@@ -138,11 +158,12 @@ gh pr merge --auto --squash
 - Web app versioning is independent of spec and service.
 - Each deployed version must declare which spec version it targets.
 - Rollbacks must be supported without requiring API changes.
+- Deployment target is **Cloudflare Pages** (SPA) + **Pages Functions** (BFF).
 
 ## 9. Testing philosophy
 
 - **Component tests** for UI behavior
-- **Integration tests** for API interactions
+- **Integration tests** for BFF `/api/*` behavior and error mapping
 - **Accessibility tests** for critical flows
 - **End-to-end tests** for:
   - Trip listing
@@ -162,3 +183,4 @@ Acceptance scenarios from the spec repo are encouraged as test inputs.
 - This repo is not a planning tool.
 - This repo does not define product behavior.
 - This repo is not a replacement for the CLI.
+- This repo does not implement OAuth in the browser.
