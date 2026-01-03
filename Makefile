@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help ci changelog-verify changelog-release release-help dev test test-watch gen build typecheck
+.PHONY: help ci changelog-verify gen-verify changelog-release release-help dev test test-watch gen build typecheck
 
 help: ## Show available targets
 	@echo "Targets:"
@@ -35,6 +35,7 @@ ci: changelog-verify ## Run repo CI checks (includes npm test/build when package
 	@if [ -f package.json ]; then \
 		echo "Node checks (install + lint + test + build)..."; \
 		if [ -f package-lock.json ]; then npm ci; else npm install; fi; \
+		$(MAKE) gen-verify; \
 		npm run lint --if-present; \
 		npm test --if-present; \
 		npm run build --if-present; \
@@ -42,8 +43,10 @@ ci: changelog-verify ## Run repo CI checks (includes npm test/build when package
 		echo "NOTE: No package.json; skipping Node checks."; \
 	fi
 
-changelog-verify: ## Verify CHANGELOG.md format and generated types are up to date
+changelog-verify: ## Verify CHANGELOG.md format
 	@bash ./scripts/verify_changelog.sh
+
+gen-verify: ## Verify generated OpenAPI types are up to date with openapi/*.yaml
 	@bash ./scripts/verify_generated_types.sh
 
 changelog-release: ## Prepare CHANGELOG.md for a release (requires VERSION=x.y.z)

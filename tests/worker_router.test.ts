@@ -24,7 +24,7 @@ describe("_worker router", () => {
 
   it("routes all declared endpoints and 404s everything else", async () => {
     const { mod, mocks } = await withWorker();
-    const env = { SESSIONS: {} } as any;
+    const env = { SESSIONS: {}, ASSETS: { fetch: async () => new Response("asset") } } as any;
     const fetch = (req: Request) => (mod.default as any).fetch(req, env, {} as any) as Promise<Response>;
 
     expect((await fetch(new Request("https://x/auth/google/login", { method: "GET" }))).status).toBe(200);
@@ -45,7 +45,8 @@ describe("_worker router", () => {
     expect((await fetch(new Request("https://x/api/members/me", { method: "GET" }))).status).toBe(200);
     expect(mocks.handleGetMembersMe).toHaveBeenCalledOnce();
 
-    expect((await fetch(new Request("https://x/nope", { method: "GET" }))).status).toBe(404);
+    // Non-BFF routes are served from static assets.
+    expect((await fetch(new Request("https://x/nope", { method: "GET" }))).status).toBe(200);
   });
 });
 
