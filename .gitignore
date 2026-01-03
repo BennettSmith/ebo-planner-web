@@ -1,0 +1,8 @@
+node_modules/
+.wrangler/
+public/_worker.js
+coverage/
+.dev.vars
+.DS_Store
+
+

@@ -1,0 +1,448 @@
+openapi: 3.0.3
+info:
+  title: Auth Genie API
+  version: 0.1.5
+  description: >
+    Auth Genie is a token-exchange service (not a full IdP). It accepts ID tokens from
+    external identity providers (Google and Apple in v0.1), maps them to a stable internal
+    subject (`sub`), and issues Auth Genie JWT access tokens for resource servers.
+servers:
+  - url: https://api.authgenie.com
+tags:
+  - name: tokens
+    description: Token exchange and lifecycle endpoints
+  - name: discovery
+    description: Key discovery for token verification
+  - name: userinfo
+    description: User identity information
+paths:
+  /v1/oauth/token:
+    post:
+      tags: [tokens]
+      summary: OAuth 2.0 Token Endpoint (token exchange + refresh)
+      description: >
+        Issues Auth Genie access tokens via the OAuth 2.0 Token Endpoint (RFC 6749).
+        Supports refresh tokens (RFC 6749) and OAuth 2.0 Token Exchange (RFC 8693) for
+        exchanging an external OIDC ID Token for an Auth Genie access token.
+      security:
+        - ClientBasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            encoding:
+              audiences:
+                style: form
+                explode: true
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/TokenExchangeRequest"
+                - $ref: "#/components/schemas/RefreshTokenRequest"
+              discriminator:
+                propertyName: grant_type
+      responses:
+        "200":
+          description: Token(s) issued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TokenResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_request:
+                  summary: Malformed request
+                  value:
+                    error: invalid_request
+                    error_description: "Missing required parameter: grant_type"
+                invalid_grant:
+                  summary: Invalid or expired subject/refresh token
+                  value:
+                    error: invalid_grant
+                    error_description: Invalid or expired token
+                invalid_scope:
+                  summary: Requested scope not allowed
+                  value:
+                    error: invalid_scope
+                    error_description: Requested scope is not allowed
+        "401":
+          description: Invalid client authentication
+          headers:
+            WWW-Authenticate:
+              description: >
+                Challenge header for HTTP Basic auth. Included on invalid_client responses.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_client:
+                  summary: Invalid client credentials
+                  value:
+                    error: invalid_client
+                    error_description: Invalid client authentication
+  /v1/token/revoke:
+    post:
+      tags: [tokens]
+      summary: Revoke a refresh token
+      description: Revokes a previously issued refresh token so it cannot be used again.
+      security:
+        - ClientBasicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: "#/components/schemas/TokenRevokeRequest"
+      responses:
+        "200":
+          description: Token revoked
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /v1/userinfo:
+    get:
+      tags: [userinfo]
+      summary: Retrieve user profile claims for the authenticated user
+      description: >
+        Returns claims about the authenticated end-user derived from the stable internal identity.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User profile claims
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfoResponse"
+        "401":
+          description: Invalid or expired token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /.well-known/openid-configuration:
+    get:
+      tags: [discovery]
+      summary: OpenID Provider Configuration Information
+      description: >
+        Discovery document used by resource servers and clients to find Auth Genie endpoints.
+        Auth Genie is not a full OIDC provider, but it publishes this document to support
+        standardized discovery of `jwks_uri` and related endpoint metadata.
+      responses:
+        "200":
+          description: Discovery document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenIDConfiguration"
+  /.well-known/jwks.json:
+    get:
+      tags: [discovery]
+      summary: JSON Web Key Set (JWKS)
+      description: >
+        Public keys for verifying Auth Genie-issued JWTs. Recommended to remain unversioned.
+      responses:
+        "200":
+          description: JWKS
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JWKSResponse"
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ClientBasicAuth:
+      type: http
+      scheme: basic
+  schemas:
+    OpenIDConfiguration:
+      type: object
+      additionalProperties: true
+      description: >
+        OpenID Provider Metadata (RFC 8414 / OIDC Discovery). Auth Genie publishes a minimal,
+        pragmatic subset suitable for discovery of the issuer, JWKS, and relevant endpoints.
+      required: [issuer, jwks_uri]
+      properties:
+        issuer:
+          type: string
+          format: uri
+          description: Issuer identifier for Auth Genie access tokens.
+          example: https://api.authgenie.com
+        jwks_uri:
+          type: string
+          format: uri
+          description: URL of the JSON Web Key Set used to verify Auth Genie access tokens.
+          example: https://api.authgenie.com/.well-known/jwks.json
+        token_endpoint:
+          type: string
+          format: uri
+          description: OAuth 2.0 token endpoint.
+          example: https://api.authgenie.com/v1/oauth/token
+        userinfo_endpoint:
+          type: string
+          format: uri
+          description: UserInfo endpoint.
+          example: https://api.authgenie.com/v1/userinfo
+    TokenExchangeRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        OAuth 2.0 Token Exchange request (RFC 8693).
+        Use this to exchange an external OIDC ID Token for an Auth Genie access token.
+      required: [grant_type, subject_token_type, subject_token]
+      properties:
+        tenant_id:
+          type: string
+          description: >
+            Tenant identifier for scoping the request. In v0.1, this may be omitted in single-tenant
+            deployments (server uses a configured default), but multi-tenant behavior requires a
+            tenant-scoped request. If provided, the server must validate it against the authenticated
+            client/tenant configuration.
+        grant_type:
+          type: string
+          enum: ["urn:ietf:params:oauth:grant-type:token-exchange"]
+        subject_token_type:
+          type: string
+          enum: ["urn:ietf:params:oauth:token-type:id_token"]
+        subject_token:
+          type: string
+          description: External OIDC ID Token (the "subject token" being exchanged).
+        audiences:
+          type: array
+          description: >
+            Resource server audiences for the Auth Genie access token. If provided, must be a subset of the
+            authenticated client's configured audience allow-list.
+            For `application/x-www-form-urlencoded` requests, encode multiple audiences by repeating the key:
+            `audiences=https://rs1&audiences=https://rs2`.
+          items:
+            type: string
+        scope:
+          type: string
+          description: >
+            Space-delimited OAuth scopes requested for the issued access token (RFC 6749).
+        requested_token_type:
+          type: string
+          description: >
+            Optional. Requested type of the issued token (RFC 8693).
+            If omitted, the server issues an access token.
+        resource:
+          type: string
+          description: Optional. Resource indicator (RFC 8693).
+        authgenie_oidc_metadata:
+          type: string
+          maxLength: 2048
+          description: >
+            Non-standard. Optional JSON string carrying limited OIDC profile metadata that may not be present
+            in the upstream ID token (e.g., Apple name claims on first sign-in).
+            v0.1 contract:
+            - Only supported for Apple token exchange in v0.1
+            - Must be a JSON object with allow-listed string fields: `name`, `given_name`, `family_name`, `email`
+            - Unknown fields must be rejected (`invalid_request`)
+            - Intended for display/userinfo only; MUST NOT be used for authorization decisions
+    RefreshTokenRequest:
+      type: object
+      additionalProperties: false
+      description: OAuth 2.0 Refresh Token grant request (RFC 6749).
+      required: [grant_type, refresh_token]
+      properties:
+        tenant_id:
+          type: string
+          description: >
+            Tenant identifier for scoping the refresh request. In v0.1, this may be omitted in
+            single-tenant deployments (server uses a configured default). If provided, the server must
+            validate it against the authenticated client/tenant configuration.
+        grant_type:
+          type: string
+          enum: [refresh_token]
+        refresh_token:
+          type: string
+        scope:
+          type: string
+          description: >
+            Optional. Space-delimited scopes for the new access token (RFC 6749).
+            If omitted, the scope is typically the same as originally granted.
+    TokenResponse:
+      type: object
+      description: >
+        OAuth 2.0 Access Token Response (RFC 6749).
+
+        AuthGenie extension: response MAY include a stable `sub` plus an allow-listed subset of upstream profile
+        claims (if available during token exchange). These fields are informational only.
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          enum: [Bearer]
+          default: Bearer
+        expires_in:
+          type: integer
+        refresh_token:
+          type: string
+          nullable: true
+        scope:
+          type: string
+          nullable: true
+        sub:
+          type: string
+          format: uuid
+          nullable: true
+          description: "AuthGenie stable subject identifier for the user (same value as access token `sub`)."
+        tenant_id:
+          type: string
+          nullable: true
+          description: "Tenant identifier for the request (same value as access token `tenant_id` claim)."
+        name:
+          type: string
+          nullable: true
+          description: "Optional. Display name derived from upstream claims when available."
+        given_name:
+          type: string
+          nullable: true
+        family_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        email_verified:
+          type: boolean
+          nullable: true
+    TokenRevokeRequest:
+      type: object
+      additionalProperties: false
+      description: >
+        Token revocation request (RFC 7009-style). This endpoint is intended for revoking refresh tokens.
+        The server SHOULD respond with 200 even if the token is unknown or already revoked.
+      required: [token]
+      properties:
+        tenant_id:
+          type: string
+          description: >
+            Tenant identifier for scoping the revoke request. In v0.1, this may be omitted in
+            single-tenant deployments (server uses a configured default). If provided, the server must
+            validate it against the authenticated client/tenant configuration.
+        token:
+          type: string
+          description: The token to revoke (typically a refresh token).
+        token_type_hint:
+          type: string
+          nullable: true
+          description: Optional hint about the type of the token being revoked.
+          enum: [refresh_token]
+    UserInfoResponse:
+      type: object
+      required: [sub]
+      properties:
+        sub:
+          type: string
+          format: uuid
+          description: "Stable internal subject identifier for the user (v0.1: UUIDv7)."
+        name:
+          type: string
+          nullable: true
+        given_name:
+          type: string
+          nullable: true
+        family_name:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        email_verified:
+          type: boolean
+          nullable: true
+        picture:
+          type: string
+          format: uri
+          nullable: true
+        locale:
+          type: string
+          nullable: true
+        idp:
+          type: string
+          enum: [google, apple]
+          nullable: true
+        tenant_id:
+          type: string
+          nullable: true
+    JWKSResponse:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/JWK"
+    JWK:
+      type: object
+      required: [kty, kid, use, alg]
+      properties:
+        kty:
+          type: string
+          enum: [RSA]
+        kid:
+          type: string
+        use:
+          type: string
+          enum: [sig]
+        alg:
+          type: string
+          enum: [RS256]
+        n:
+          type: string
+          nullable: true
+        e:
+          type: string
+          nullable: true
+    ErrorResponse:
+      type: object
+      description: >
+        OAuth 2.0 error response (RFC 6749). Some fields are optional depending on the error.
+        Common values for `error` in Auth Genie include:
+        `invalid_request`, `invalid_client`, `invalid_grant`, `unauthorized_client`, `invalid_scope`, `unsupported_grant_type`.
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: OAuth 2.0 error code.
+        error_description:
+          type: string
+          nullable: true
+          description: Human-readable ASCII text providing additional information (RFC 6749).
+        error_uri:
+          type: string
+          nullable: true
+          format: uri
+          description: URI identifying a human-readable web page with information about the error (RFC 6749).
+        message:
+          type: string
+          deprecated: true
+          nullable: true
+          description: Deprecated. Use error_description.
+        request_id:
+          type: string
+          nullable: true

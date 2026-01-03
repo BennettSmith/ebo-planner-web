@@ -2,7 +2,7 @@
 set -euo pipefail
 
 CHANGELOG_FILE="${CHANGELOG_FILE:-CHANGELOG.md}"
-SPEC_LOCK_FILE="${SPEC_LOCK_FILE:-spec.lock}"
+# NOTE: This repo vendors its OpenAPI inputs (openapi/*.yaml). We do not pin an external spec repo via spec.lock.
 
 usage() {
   cat <<'EOF'
@@ -48,35 +48,28 @@ script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Ensure Unreleased + required headings exist.
 "${script_dir}/verify_changelog.sh" >/dev/null
 
-# Ensure spec.lock exists and is valid before cutting a web release.
-"${script_dir}/verify_spec_lock.sh" >/dev/null
-
-spec_raw="$(tr -d '[:space:]' < "${SPEC_LOCK_FILE}" | head -n 1)"
-spec_version="v${spec_raw#v}"
-targets_line="- Targets spec \`${spec_version}\`"
+# Ensure generated types are up-to-date with vendored OpenAPI before cutting a web release.
+bash "${script_dir}/verify_generated_types.sh" >/dev/null
 
 today="$(date +%F)"
 
 tmpfile="$(mktemp "${TMPDIR:-/tmp}/release_changelog.XXXXXX")"
 trap 'rm -f "${tmpfile}"' EXIT
 
-awk -v version="${version}" -v today="${today}" -v targets_line="${targets_line}" '
+awk -v version="${version}" -v today="${today}" '
   function is_section_header(line) { return (line ~ /^## \[/) }
   function is_unreleased_header(line) { return (line == "## [Unreleased]") }
   function is_subheader(line) { return (line ~ /^### /) }
   function has_non_ws(line) { return (line ~ /[^[:space:]]/) }
 
-  function print_version_section(   any_changes, k, i, h, n, j, has_exact_targets) {
+  function print_version_section(   any_changes, k, i, h, n, j) {
     any_changes = 0
-    has_exact_targets = 0
 
     for (k in body) {
       if (has_non_ws(body[k])) { any_changes = 1 }
-      if (index(body[k], targets_line) > 0) { has_exact_targets = 1 }
     }
     for (i = 1; i <= preamble_count; i++) {
       if (has_non_ws(preamble[i])) { any_changes = 1 }
-      if (index(preamble[i], targets_line) > 0) { has_exact_targets = 1 }
     }
 
     if (!any_changes) {
@@ -101,11 +94,6 @@ awk -v version="${version}" -v today="${today}" -v targets_line="${targets_line}
     for (i = 1; i <= 6; i++) {
       h = headings[i]
       print h
-
-      # Web-specific requirement: ensure release notes include "- Targets spec `vX.Y.Z`".
-      if (h == "### Changed" && !has_exact_targets) {
-        print targets_line
-      }
 
       if (h in body) {
         n = split(body[h], lines, "\n")
@@ -180,19 +168,6 @@ awk -v version="${version}" -v today="${today}" -v targets_line="${targets_line}
   err "Failed to cut release from ${CHANGELOG_FILE}."
   exit 1
 }
-
-# Final guard: ensure the new version section contains the required spec line.
-if ! awk -v version="## [${version}] - ${today}" -v required="${targets_line}" '
-  $0 == version { in_version=1; next }
-  in_version && $0 ~ /^## \[/ { in_version=0 }
-  in_version && $0 == required { found=1 }
-  END { exit(found ? 0 : 1) }
-' "${tmpfile}"; then
-  err "Release notes must include this line under the new version section:"
-  err "  ${targets_line}"
-  err "spec.lock currently pins: ${spec_version}"
-  exit 1
-fi
 
 mv "${tmpfile}" "${CHANGELOG_FILE}"
 rm -f "${tmpfile}.err" || true

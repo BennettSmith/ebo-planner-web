@@ -1,0 +1,29 @@
+{
+  "name": "ebo-planner-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build:worker": "esbuild ./_worker.ts --bundle --format=esm --platform=browser --target=es2022 --outfile=./public/_worker.js",
+    "dev": "npm run build:worker && wrangler pages dev ./public --compatibility-date 2025-01-01 --local-protocol http",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "gen:authgenie": "openapi-typescript ./openapi/authgenie-openapi.yaml -o ./functions/_generated/authgenie.ts",
+    "gen:planner": "openapi-typescript ./openapi/planner-openapi.yaml -o ./functions/_generated/planner.ts",
+    "gen": "npm run gen:authgenie && npm run gen:planner",
+    "build": "npm run typecheck && npm run build:worker"
+  },
+  "dependencies": {
+    "jose": "^5.2.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250106.0",
+    "esbuild": "^0.25.0",
+    "openapi-typescript": "^7.7.2",
+    "typescript": "^5.6.3",
+    "@vitest/coverage-v8": "^2.1.8",
+    "vitest": "^2.1.8",
+    "wrangler": "^4.54.0"
+  }
+}

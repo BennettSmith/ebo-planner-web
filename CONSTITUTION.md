@@ -8,7 +8,7 @@ Overland Trip Planning system.
 It is built as a **Single Page Application (SPA)** with a **Backend-for-Frontend (BFF)**:
 
 - The **SPA** runs in the browser and renders the UI.
-- The **BFF** runs on **Cloudflare Pages Functions** and is the browser’s only backend.
+- The **BFF** runs on **Cloudflare Pages Functions (Advanced Mode)** and is the browser’s only backend.
 
 It exists to:
 
@@ -22,12 +22,11 @@ This web app is not the primary planning tool.
 ## 2. Source of Truth
 
 - **Product behavior, domain language, and API contracts** are defined in the **spec repo**.
-- This repo consumes a pinned spec version via `spec.lock` (mandatory).
 - **Web hosting + SPA/BFF architecture decisions** are defined in `ARCHITECTURE_SPA_BFF.md`.
 
 The web app must not rely on undocumented or unspecified service behavior.
 
-**We practice spec-first development.** All requirements changes — new features, changes to behavior defined by a use case, and API contract changes — **must originate in the spec repo**. This repo may only implement/consume those changes after updating `spec.lock`.
+**We practice spec-first development.** All requirements changes — new features, changes to behavior defined by a use case, and API contract changes — **must originate in the spec repo**. This repo consumes vendored OpenAPI inputs under `openapi/` and generated types under `functions/_generated/`.
 
 ## 3. Scope
 
@@ -36,6 +35,8 @@ The web app must not rely on undocumented or unspecified service behavior.
 - UI components and pages
 - Client-side routing and state management
 - BFF routes and handlers (`/auth/*`, `/api/*`) implemented as Cloudflare Pages Functions
+  - Routing is owned by `_worker.ts` (single entrypoint)
+  - Route handlers live in modules (e.g. `functions/auth/*`, `functions/api/*`)
 - Authentication and session management **in the BFF**
 - OpenAPI-derived TypeScript **types** used for request/response validation and safety
 - Accessibility, performance, and UX concerns
@@ -96,8 +97,8 @@ If a feature begins to resemble “planning,” it likely belongs in the CLI.
 
 ### 6.1 Spec pinning
 
-- `spec.lock` defines the exact spec version this web app targets.
-- Any generated types and any checked-in OpenAPI inputs must be derived from that version only.
+- OpenAPI inputs are vendored under `openapi/`.
+- Generated types under `functions/_generated/` must be kept in sync with the vendored OpenAPI inputs.
 
 ### 6.2 Error handling
 
@@ -110,7 +111,7 @@ If a feature begins to resemble “planning,” it likely belongs in the CLI.
 
 1) Spec repo change (if behavior/contract changes)
 2) Tag spec
-3) Update `spec.lock`
+3) Update vendored OpenAPI files under `openapi/`
 4) Regenerate OpenAPI-derived types (when applicable)
 5) Update UI
 
