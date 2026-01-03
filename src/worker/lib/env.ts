@@ -1,4 +1,4 @@
-import type { Env } from "../../_worker";
+import type { Env } from "../../../_worker";
 
 export function requireEnv(env: Env, key: keyof Env): string {
   const v = env[key];

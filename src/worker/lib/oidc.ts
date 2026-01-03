@@ -1,4 +1,4 @@
-import type { Env } from "../../_worker";
+import type { Env } from "../../../_worker";
 import { parseCookieHeader, serializeCookie } from "./cookies";
 
 type Provider = "google" | "apple";

@@ -13,7 +13,7 @@ This repo is a **Cloudflare Pages** app with:
 **Goal**: cover *branching logic* and edge cases in pure TypeScript modules without needing real network calls.
 
 - **What to test**
-  - `functions/_lib/*` helpers (cookie parsing/serialization, env validation, request/response helpers)
+  - `src/worker/lib/*` helpers (cookie parsing/serialization, env validation, request/response helpers)
   - session behavior (DO wrapper logic) using **in-memory stubs**
   - token refresh logic (`ensureAccessToken`) using **mocked AuthGenie client**
   - router behavior in `_worker.ts` (route/method → handler selection)

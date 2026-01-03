@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SessionsDO } from "../functions/_lib/session_do";
+import { SessionsDO } from "../src/worker/lib/session_do";
 
 function makeState() {
   const store = new Map<string, unknown>();

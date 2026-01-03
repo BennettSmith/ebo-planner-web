@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 // Mock OIDC helpers for deterministic state/nonce + cookies.
-vi.mock("../functions/_lib/oidc", () => ({
+vi.mock("../src/worker/lib/oidc", () => ({
   makeState: () => "STATE",
   makeNonce: () => "NONCE",
   requireBaseUrl: () => "https://example.com",
@@ -17,13 +17,13 @@ vi.mock("../functions/_lib/oidc", () => ({
 }));
 
 // Mock session persistence.
-vi.mock("../functions/_lib/session", () => ({
+vi.mock("../src/worker/lib/session", () => ({
   loadSession: vi.fn(async () => ({ sessionId: "sid", session: {}, setCookieHeader: "bff_session=sid; Path=/" })),
   saveSession: vi.fn(async () => {}),
 }));
 
 // Mock AuthGenie exchange.
-vi.mock("../functions/_lib/authgenie", () => ({
+vi.mock("../src/worker/lib/authgenie", () => ({
   tokenExchangeWithIdToken: vi.fn(async () => ({ access_token: "AG_AT", token_type: "Bearer", expires_in: 60, refresh_token: "AG_RT", sub: "sub" })),
 }));
 

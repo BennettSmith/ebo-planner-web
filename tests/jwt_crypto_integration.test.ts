@@ -60,11 +60,11 @@ describe("JWT crypto integration (real signatures, hermetic)", () => {
       };
     });
 
-    vi.doMock("../functions/_lib/session", () => ({
+    vi.doMock("../src/worker/lib/session", () => ({
       loadSession: vi.fn(async () => ({ sessionId: "sid", session: {}, setCookieHeader: undefined })),
       saveSession: vi.fn(async () => {}),
     }));
-    vi.doMock("../functions/_lib/authgenie", () => ({
+    vi.doMock("../src/worker/lib/authgenie", () => ({
       tokenExchangeWithIdToken: vi.fn(async () => ({ access_token: "AG_AT", token_type: "Bearer", expires_in: 60 })),
     }));
 
@@ -111,11 +111,11 @@ describe("JWT crypto integration (real signatures, hermetic)", () => {
       };
     });
 
-    vi.doMock("../functions/_lib/session", () => ({
+    vi.doMock("../src/worker/lib/session", () => ({
       loadSession: vi.fn(async () => ({ sessionId: "sid", session: {}, setCookieHeader: undefined })),
       saveSession: vi.fn(async () => {}),
     }));
-    vi.doMock("../functions/_lib/authgenie", () => ({
+    vi.doMock("../src/worker/lib/authgenie", () => ({
       tokenExchangeWithIdToken: vi.fn(async () => ({ access_token: "AG_AT", token_type: "Bearer", expires_in: 60 })),
     }));
 
@@ -161,11 +161,11 @@ describe("JWT crypto integration (real signatures, hermetic)", () => {
       };
     });
 
-    vi.doMock("../functions/_lib/session", () => ({
+    vi.doMock("../src/worker/lib/session", () => ({
       loadSession: vi.fn(async () => ({ sessionId: "sid", session: {}, setCookieHeader: undefined })),
       saveSession: vi.fn(async () => {}),
     }));
-    vi.doMock("../functions/_lib/authgenie", () => ({
+    vi.doMock("../src/worker/lib/authgenie", () => ({
       tokenExchangeWithIdToken: vi.fn(async () => ({ access_token: "AG_AT", token_type: "Bearer", expires_in: 60 })),
     }));
 

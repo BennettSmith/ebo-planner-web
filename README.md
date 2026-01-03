@@ -6,6 +6,16 @@ Member-facing web app for East Bay Overland. This repo is a **same-origin SPA + 
 - **BFF**: advanced-mode router at `_worker.ts` (bundled to `public/_worker.js`)
 - **No tokens in the browser**: auth state is **HttpOnly cookies** only (tokens stay server-side in Durable Object sessions)
 
+## Source layout (recommended)
+
+- **SPA source**: `src/spa/` → bundled to `public/app.js`
+- **Shared contracts**: `src/shared/contracts/`
+  - Zod schemas + inferred TypeScript types
+  - Imported by both BFF and SPA to share the JSON contract safely
+- **BFF source (router shim)**:
+  - Root `_worker.ts` is a tiny shim required by `wrangler.toml` and the Pages Advanced Mode contract
+  - Implementation lives at `src/worker/worker.ts` (router implementation)
+
 ## Local development (Wrangler)
 
 ### Dev quickstart
@@ -72,6 +82,14 @@ npm run dev
 - **Files**: `public/index.html`, images, CSS, etc.
 - **How to see changes**: refresh the browser page.
 - Wrangler may live-reload some assets depending on settings, but a manual refresh is always enough.
+
+#### Editing SPA source (`src/spa/**` and `src/shared/**`)
+
+- **Files**: `src/spa/**`, `src/shared/**`
+- **Build output**: bundled to `public/app.js`
+- **How to see changes**:
+  - Re-run `npm run build:spa` (quick) while `npm run dev` is running, then refresh; or
+  - Stop/restart `npm run dev` (it always rebuilds worker + SPA on startup).
 
 #### Editing BFF code (`_worker.ts` and `functions/**`)
 

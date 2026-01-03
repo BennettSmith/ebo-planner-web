@@ -19,14 +19,9 @@
   <body>
     <main>
       <h1>East Bay Overland</h1>
-      <div class="card">
-        <p>This is the member portal SPA served from <code>/</code>. Authentication runs on the BFF.</p>
-        <div class="row">
-          <a class="button" href="/auth/google/login">Sign in with Google</a>
-          <a class="button" href="/auth/apple/login">Sign in with Apple</a>
-        </div>
-        <p style="margin-top: 1rem; opacity: .8;">Once signed in, the SPA will call same-origin <code>/api/*</code> endpoints (no tokens in the browser).</p>
-      </div>
+      <p id="status" style="opacity: .8; margin: 0;">Loading…</p>
+      <div id="app" style="margin-top: 1rem;"></div>
     </main>
+    <script type="module" src="/app.js"></script>
   </body>
 </html>

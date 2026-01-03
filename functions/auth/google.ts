@@ -1,9 +1,9 @@
 import type { Env } from "../../_worker";
 import { jwtVerify, createRemoteJWKSet } from "jose";
-import { loadSession, saveSession } from "../_lib/session";
-import { clearOAuthCookie, makeNonce, makeState, readOAuthCookie, requireBaseUrl, setOAuthCookie } from "../_lib/oidc";
-import { tokenExchangeWithIdToken } from "../_lib/authgenie";
-import { redirectResponse } from "../_lib/response";
+import { loadSession, saveSession } from "../../src/worker/lib/session";
+import { clearOAuthCookie, makeNonce, makeState, readOAuthCookie, requireBaseUrl, setOAuthCookie } from "../../src/worker/lib/oidc";
+import { tokenExchangeWithIdToken } from "../../src/worker/lib/authgenie";
+import { redirectResponse } from "../../src/worker/lib/response";
 
 type GoogleTokenResponse = {
   id_token?: string;

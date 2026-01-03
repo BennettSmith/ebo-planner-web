@@ -1,8 +1,8 @@
 import type { Env } from "../../../_worker";
 import type { ExecutionContext } from "@cloudflare/workers-types";
-import { loadSession, saveSession } from "../../_lib/session";
-import { ensureAccessToken } from "../../_lib/tokens";
-import { jsonResponse } from "../../_lib/response";
+import { loadSession, saveSession } from "../../../src/worker/lib/session";
+import { ensureAccessToken } from "../../../src/worker/lib/tokens";
+import { jsonResponse } from "../../../src/worker/lib/response";
 
 function unauthorized(): Response {
   return jsonResponse(

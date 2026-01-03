@@ -1,4 +1,4 @@
-import type { Env } from "../../_worker";
+import type { Env } from "../../../_worker";
 import { basicAuthHeader, readJson } from "./http";
 
 export type AuthGenieTokenResponse = {
