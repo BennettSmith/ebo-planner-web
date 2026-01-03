@@ -1,6 +1,6 @@
 import type { Env } from "../../_worker";
-import { deleteSession, loadSession, clearSessionCookie } from "../_lib/session";
-import { clearOAuthCookie } from "../_lib/oidc";
+import { deleteSession, loadSession, clearSessionCookie } from "../../src/worker/lib/session";
+import { clearOAuthCookie } from "../../src/worker/lib/oidc";
 
 export async function handleLogout(request: Request, env: Env): Promise<Response> {
   const { sessionId } = await loadSession(request, env);

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { requireEnv } from "../functions/_lib/env";
-import { basicAuthHeader, readJson } from "../functions/_lib/http";
-import { jsonResponse, redirectResponse } from "../functions/_lib/response";
-import { clearOAuthCookie, readOAuthCookie, requireBaseUrl, setOAuthCookie } from "../functions/_lib/oidc";
+import { requireEnv } from "../src/worker/lib/env";
+import { basicAuthHeader, readJson } from "../src/worker/lib/http";
+import { jsonResponse, redirectResponse } from "../src/worker/lib/response";
+import { clearOAuthCookie, readOAuthCookie, requireBaseUrl, setOAuthCookie } from "../src/worker/lib/oidc";
 
 describe("env", () => {
   it("requireEnv returns value or throws", () => {
@@ -61,7 +61,7 @@ describe("oidc cookie helpers", () => {
   });
 
   it("makeState/makeNonce return url-safe tokens", async () => {
-    const mod = await import("../functions/_lib/oidc");
+    const mod = await import("../src/worker/lib/oidc");
     const s = mod.makeState();
     const n = mod.makeNonce();
     expect(s).toMatch(/^[A-Za-z0-9_-]+$/);

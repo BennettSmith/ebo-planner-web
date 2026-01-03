@@ -1,4 +1,4 @@
-import type { Env } from "../../_worker";
+import type { Env } from "../../../_worker";
 import { parseCookieHeader, serializeCookie } from "./cookies";
 import type { Session } from "./session_types";
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../functions/_lib/session", () => ({
+vi.mock("../src/worker/lib/session", () => ({
   loadSession: vi.fn(async () => ({
     sessionId: "sid",
     session: {},
@@ -9,12 +9,12 @@ vi.mock("../functions/_lib/session", () => ({
   saveSession: vi.fn(async () => {}),
 }));
 
-vi.mock("../functions/_lib/tokens", () => ({
+vi.mock("../src/worker/lib/tokens", () => ({
   ensureAccessToken: vi.fn(async () => ({ accessToken: "AT", updatedSession: { accessToken: "AT" } })),
 }));
 
 import { handleGetMembersMe } from "../functions/api/members/me";
-import { ensureAccessToken } from "../functions/_lib/tokens";
+import { ensureAccessToken } from "../src/worker/lib/tokens";
 
 describe("/api/members/me handler", () => {
   it("proxies to planner /members/me with bearer token and forwards Set-Cookie", async () => {

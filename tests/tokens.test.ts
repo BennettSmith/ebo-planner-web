@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../functions/_lib/authgenie", () => {
+vi.mock("../src/worker/lib/authgenie", () => {
   return {
     refreshAccessToken: vi.fn(async () => ({
       access_token: "new_access",
@@ -12,7 +12,7 @@ vi.mock("../functions/_lib/authgenie", () => {
   };
 });
 
-import { ensureAccessToken } from "../functions/_lib/tokens";
+import { ensureAccessToken } from "../src/worker/lib/tokens";
 
 describe("ensureAccessToken", () => {
   it("returns existing token when not expired", async () => {
@@ -37,7 +37,7 @@ describe("ensureAccessToken", () => {
   });
 
   it("keeps existing refresh token when refresh response omits it", async () => {
-    const { refreshAccessToken } = await import("../functions/_lib/authgenie");
+    const { refreshAccessToken } = await import("../src/worker/lib/authgenie");
     (refreshAccessToken as any).mockImplementationOnce(async () => ({
       access_token: "new_access",
       token_type: "Bearer",

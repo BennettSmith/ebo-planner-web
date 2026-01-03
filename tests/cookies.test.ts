@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseCookieHeader, serializeCookie } from "../functions/_lib/cookies";
+import { parseCookieHeader, serializeCookie } from "../src/worker/lib/cookies";
 
 describe("cookies", () => {
   it("parses Cookie header into a map", () => {

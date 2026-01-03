@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { loadSession, saveSession, deleteSession } from "../functions/_lib/session";
+import { loadSession, saveSession, deleteSession } from "../src/worker/lib/session";
 import type { Env } from "../_worker";
 
 function makeEnv(): Env {

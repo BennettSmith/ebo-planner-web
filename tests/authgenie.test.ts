@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { refreshAccessToken, tokenExchangeWithIdToken } from "../functions/_lib/authgenie";
+import { refreshAccessToken, tokenExchangeWithIdToken } from "../src/worker/lib/authgenie";
 
 describe("authgenie", () => {
   it("tokenExchangeWithIdToken posts form-encoded request with basic auth", async () => {

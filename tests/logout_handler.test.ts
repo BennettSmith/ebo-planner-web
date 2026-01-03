@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../functions/_lib/session", () => ({
+vi.mock("../src/worker/lib/session", () => ({
   loadSession: vi.fn(async () => ({ sessionId: "sid", session: {}, setCookieHeader: undefined })),
   deleteSession: vi.fn(async () => {}),
   clearSessionCookie: vi.fn(() => "bff_session=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax"),
 }));
 
-vi.mock("../functions/_lib/oidc", () => ({
+vi.mock("../src/worker/lib/oidc", () => ({
   clearOAuthCookie: vi.fn(() => "__Host-ebo_oauth=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax"),
 }));
 
