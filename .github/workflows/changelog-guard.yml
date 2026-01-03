@@ -15,9 +15,6 @@ jobs:
       - name: Verify changelog format
         run: ./scripts/verify_changelog.sh
 
-      - name: Verify spec.lock
-        run: ./scripts/verify_spec_lock.sh
-
       - name: Require changelog update when web UX/behavior changes
         shell: bash
         run: |

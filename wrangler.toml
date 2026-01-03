@@ -1,0 +1,16 @@
+name = "ebo-planner-web"
+compatibility_date = "2025-01-01"
+
+# Pages Functions (Advanced Mode) entrypoint.
+main = "_worker.ts"
+
+[durable_objects]
+bindings = [
+  { name = "SESSIONS", class_name = "SessionsDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SessionsDO"]
+
+

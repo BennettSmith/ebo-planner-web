@@ -22,27 +22,32 @@
 
 Reminder: externally visible behavior changes should be specified in the **spec repo first**.
 
-## Spec pinning policy (`spec.lock`)
+## OpenAPI inputs & generated types
 
-This repo must pin the spec version the web app targets in `spec.lock` (a spec git tag like `v1.2.3`).
+This repo vendors the published OpenAPI inputs under `openapi/`.
 
-- Update `spec.lock` when adopting a new spec version.
-- Each web release must include a changelog line: `- Targets spec \`vX.Y.Z\`` (the release script will ensure this).
+- If you update `openapi/*.yaml`, you **must** run `npm run gen` and commit the resulting changes under `functions/_generated/`.
+- CI enforces that `functions/_generated/` is up to date with `openapi/`.
 
 ## Cutting a web release
 
-1. Update `spec.lock` to the spec tag targeted (for example: `v1.2.3`).
-2. Ensure `CHANGELOG.md` has entries under `## [Unreleased]`.
-3. Cut the release section (moves Unreleased entries into a dated version section and ensures it includes the pinned spec version):
+1. Ensure `CHANGELOG.md` has entries under `## [Unreleased]`.
+2. Ensure generated types are up to date (if `openapi/` changed):
+
+```bash
+npm run gen
+```
+
+3. Cut the release section (moves Unreleased entries into a dated version section):
 
 ```bash
 make changelog-release VERSION=x.y.z
 ```
 
-4. Commit the changelog update (and `spec.lock` if it changed):
+4. Commit the changelog update:
 
 ```bash
-git add CHANGELOG.md spec.lock
+git add CHANGELOG.md
 git commit -m "chore(release): vX.Y.Z"
 ```
 

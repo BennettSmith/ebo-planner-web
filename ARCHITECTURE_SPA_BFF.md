@@ -20,7 +20,13 @@ It is intended to be used as a **mega‑prompt**: if there is ambiguity, **this 
 ### Hosting
 - Platform: **Cloudflare Pages**
 - Static SPA served from `/`
-- BFF implemented using **Pages Functions**
+- BFF implemented using **Cloudflare Pages Functions (Advanced Mode)**
+- **Single entrypoint router**
+  - All BFF routing is handled in `_worker.ts` (project root)
+  - Route handlers are organized in modules under `functions/auth/*` and `functions/api/*`
+  - Build output requirement (Pages):
+    - The deployed artifact must be named `_worker.js` and live in the Pages build output directory (e.g. `public/_worker.js`)
+    - `_worker.ts` is the source entrypoint and should be bundled during `npm run build`
 - **Same-origin SPA + BFF**
   - No CORS
   - No tokens exposed to browser JavaScript
@@ -69,6 +75,16 @@ Key ideas:
 ### Providers
 - Google (OIDC)
 - Apple (OIDC, `form_post` callback)
+
+### BFF Auth Routes (exact contract)
+
+The BFF must implement the following same-origin routes:
+
+- `GET /auth/google/login`
+- `GET /auth/google/callback`
+- `GET /auth/apple/login`
+- `POST /auth/apple/callback` (Apple uses `form_post`)
+- `POST /auth/logout`
 
 ### Login Flow
 
@@ -130,6 +146,12 @@ type Session = {
 
 ## BFF API Behavior
 
+### Initial BFF API Surface (v1)
+
+Until additional endpoints are explicitly added, the BFF exposes only:
+
+- `GET /api/members/me` → proxies to Planner API `GET /members/me`
+
 ### Mandatory Rule
 Every `/api/*` endpoint **must**:
 1. Load the session
@@ -149,7 +171,10 @@ No endpoint may bypass this rule.
 ├── public/
 │   └── index.html
 ├── functions/
-│   ├── [[path]].ts
+│   ├── auth/
+│   │   ├── google.ts
+│   │   ├── apple.ts
+│   │   └── logout.ts
 │   ├── api/
 │   │   ├── me.ts
 │   │   └── ...
@@ -169,6 +194,7 @@ No endpoint may bypass this rule.
 │   ├── authgenie-openapi.yaml
 │   └── planner-openapi.yaml
 ├── _routes.json
+├── _worker.ts
 ├── wrangler.toml
 ├── package.json
 ├── .dev.vars.example
@@ -188,9 +214,19 @@ No endpoint may bypass this rule.
 }
 ```
 
-- `[[path]].ts` handles **only `/auth/*`**
-- `/api/*` endpoints live in individual files
-- Specific routes override the catch‑all
+### Advanced Mode Router
+
+- `functions/_worker.ts` is the **single entrypoint** and owns all routing for:
+  - `/auth/*`
+  - `/api/*`
+- `functions/auth/*` and `functions/api/*` are **handler modules** imported by the router.
+  - They are not file-based routes; routing decisions happen in `_worker.ts`.
+
+### Invariants
+- The SPA triggers login by redirecting to `/auth/google/login` or `/auth/apple/login`.
+- The SPA never receives access/refresh tokens and never stores tokens.
+- All authentication/session/token handling is BFF-only.
+- `/api/*` routes must enforce the “Mandatory Rule” above (session + `ensureAccessToken()` + proxy).
 
 ---
 

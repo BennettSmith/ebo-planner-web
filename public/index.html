@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>East Bay Overland</title>
+    <meta name="description" content="Member portal for East Bay Overland trips." />
+    <style>
+      :root { color-scheme: light dark; }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 2rem; }
+      main { max-width: 48rem; margin: 0 auto; }
+      .card { border: 1px solid rgba(127,127,127,.3); border-radius: 12px; padding: 1.25rem; }
+      .row { display: flex; gap: .75rem; flex-wrap: wrap; }
+      a.button { display: inline-block; padding: .6rem .9rem; border-radius: 10px; border: 1px solid rgba(127,127,127,.4); text-decoration: none; }
+      a.button:hover { border-color: rgba(127,127,127,.7); }
+      code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>East Bay Overland</h1>
+      <div class="card">
+        <p>This is the member portal SPA served from <code>/</code>. Authentication runs on the BFF.</p>
+        <div class="row">
+          <a class="button" href="/auth/google/login">Sign in with Google</a>
+          <a class="button" href="/auth/apple/login">Sign in with Apple</a>
+        </div>
+        <p style="margin-top: 1rem; opacity: .8;">Once signed in, the SPA will call same-origin <code>/api/*</code> endpoints (no tokens in the browser).</p>
+      </div>
+    </main>
+  </body>
+</html>
