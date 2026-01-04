@@ -3,6 +3,7 @@ import { jwtVerify, createRemoteJWKSet } from "jose";
 import { loadSession, saveSession } from "../../src/worker/lib/session";
 import { clearOAuthCookie, makeNonce, makeState, readOAuthCookie, requireBaseUrl, setOAuthCookie } from "../../src/worker/lib/oidc";
 import { tokenExchangeWithIdToken } from "../../src/worker/lib/authgenie";
+import { sanitizeReturnToPath } from "../../src/worker/lib/return_to";
 import { redirectResponse } from "../../src/worker/lib/response";
 
 type GoogleTokenResponse = {
@@ -20,7 +21,10 @@ function googleRedirectUri(env: Env): string {
   return `${requireBaseUrl(env)}/auth/google/callback`;
 }
 
-export async function handleGoogleLogin(_request: Request, env: Env): Promise<Response> {
+export async function handleGoogleLogin(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const returnToPath = sanitizeReturnToPath(env, url.searchParams.get("returnTo"));
+
   const state = makeState();
   const nonce = makeNonce();
 
@@ -32,7 +36,7 @@ export async function handleGoogleLogin(_request: Request, env: Env): Promise<Re
   authUrl.searchParams.set("state", state);
   authUrl.searchParams.set("nonce", nonce);
 
-  return redirectResponse(authUrl.toString(), [setOAuthCookie(env, "google", state, nonce)]);
+  return redirectResponse(authUrl.toString(), [setOAuthCookie(env, "google", state, nonce, returnToPath)]);
 }
 
 export async function handleGoogleCallback(request: Request, env: Env): Promise<Response> {
@@ -100,7 +104,7 @@ export async function handleGoogleCallback(request: Request, env: Env): Promise<
 
   const setCookies = [clearOAuthCookie()];
   if (setCookieHeader) setCookies.push(setCookieHeader);
-  return redirectResponse("/", setCookies);
+  return redirectResponse(oauth.returnToPath || "/", setCookies);
 }
 
 

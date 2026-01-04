@@ -3,6 +3,7 @@ import { importPKCS8, SignJWT, jwtVerify, createRemoteJWKSet } from "jose";
 import { loadSession, saveSession } from "../../src/worker/lib/session";
 import { clearOAuthCookie, makeNonce, makeState, readOAuthCookie, requireBaseUrl, setOAuthCookie } from "../../src/worker/lib/oidc";
 import { tokenExchangeWithIdToken } from "../../src/worker/lib/authgenie";
+import { sanitizeReturnToPath } from "../../src/worker/lib/return_to";
 import { redirectResponse } from "../../src/worker/lib/response";
 
 type AppleTokenResponse = {
@@ -32,7 +33,10 @@ async function appleClientSecret(env: Env): Promise<string> {
     .sign(key);
 }
 
-export async function handleAppleLogin(_request: Request, env: Env): Promise<Response> {
+export async function handleAppleLogin(request: Request, env: Env): Promise<Response> {
+  const url = new URL(request.url);
+  const returnToPath = sanitizeReturnToPath(env, url.searchParams.get("returnTo"));
+
   const state = makeState();
   const nonce = makeNonce();
 
@@ -45,7 +49,7 @@ export async function handleAppleLogin(_request: Request, env: Env): Promise<Res
   authUrl.searchParams.set("state", state);
   authUrl.searchParams.set("nonce", nonce);
 
-  return redirectResponse(authUrl.toString(), [setOAuthCookie(env, "apple", state, nonce)]);
+  return redirectResponse(authUrl.toString(), [setOAuthCookie(env, "apple", state, nonce, returnToPath)]);
 }
 
 export async function handleAppleCallback(request: Request, env: Env): Promise<Response> {
@@ -105,7 +109,7 @@ export async function handleAppleCallback(request: Request, env: Env): Promise<R
 
   const setCookies = [clearOAuthCookie()];
   if (setCookieHeader) setCookies.push(setCookieHeader);
-  return redirectResponse("/", setCookies);
+  return redirectResponse(oauth.returnToPath || "/", setCookies);
 }
 
 
