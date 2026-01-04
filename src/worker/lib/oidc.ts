@@ -3,12 +3,15 @@ import { parseCookieHeader, serializeCookie } from "./cookies";
 
 type Provider = "google" | "apple";
 
-type OAuthCookieV1 = {
-  v: 1;
+type OAuthCookieV1 = { v: 1; provider: Provider; state: string; nonce: string; createdAt: number };
+type OAuthCookieV2 = { v: 2; provider: Provider; state: string; nonce: string; createdAt: number; returnToPath: string };
+
+export type OAuthCookie = {
   provider: Provider;
   state: string;
   nonce: string;
   createdAt: number;
+  returnToPath: string;
 };
 
 const OAUTH_COOKIE = "__Host-ebo_oauth";
@@ -29,8 +32,8 @@ export function makeNonce(): string {
   return randomToken();
 }
 
-export function setOAuthCookie(env: Env, provider: Provider, state: string, nonce: string): string {
-  const payload: OAuthCookieV1 = { v: 1, provider, state, nonce, createdAt: Date.now() };
+export function setOAuthCookie(env: Env, provider: Provider, state: string, nonce: string, returnToPath: string): string {
+  const payload: OAuthCookieV2 = { v: 2, provider, state, nonce, createdAt: Date.now(), returnToPath };
   return serializeCookie(OAUTH_COOKIE, JSON.stringify(payload), {
     httpOnly: true,
     secure: true,
@@ -50,17 +53,27 @@ export function clearOAuthCookie(): string {
   });
 }
 
-export function readOAuthCookie(request: Request): OAuthCookieV1 | null {
+export function readOAuthCookie(request: Request): OAuthCookie | null {
   const cookies = parseCookieHeader(request.headers.get("Cookie"));
   const raw = cookies[OAUTH_COOKIE];
   if (!raw) return null;
   try {
-    const parsed = JSON.parse(raw) as OAuthCookieV1;
-    if (parsed?.v !== 1) return null;
+    const parsed = JSON.parse(raw) as OAuthCookieV1 | OAuthCookieV2;
+    if (parsed?.v !== 1 && parsed?.v !== 2) return null;
     if (parsed.provider !== "google" && parsed.provider !== "apple") return null;
     if (typeof parsed.state !== "string" || typeof parsed.nonce !== "string") return null;
     if (typeof parsed.createdAt !== "number") return null;
-    return parsed;
+
+    const returnToPath =
+      parsed.v === 2 && typeof (parsed as OAuthCookieV2).returnToPath === "string" ? (parsed as OAuthCookieV2).returnToPath : "/";
+
+    return {
+      provider: parsed.provider,
+      state: parsed.state,
+      nonce: parsed.nonce,
+      createdAt: parsed.createdAt,
+      returnToPath: returnToPath.startsWith("/") ? returnToPath : "/",
+    };
   } catch {
     return null;
   }

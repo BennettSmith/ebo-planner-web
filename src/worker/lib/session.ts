@@ -19,6 +19,12 @@ export function getSessionCookieName(env: Env): string {
   return env.SESSION_COOKIE_NAME || "bff_session";
 }
 
+export function getSessionIdFromRequest(request: Request, env: Env): string | null {
+  const cookies = parseCookieHeader(request.headers.get("Cookie"));
+  const cookieName = getSessionCookieName(env);
+  return cookies[cookieName] ?? null;
+}
+
 export function clearSessionCookie(env: Env): string {
   return serializeCookie(getSessionCookieName(env), "", {
     httpOnly: true,
@@ -43,6 +49,14 @@ export function buildSessionCookie(env: Env, sessionId: string): string {
 function stubFor(env: Env, sessionId: string): DurableObjectStub {
   const id = env.SESSIONS.idFromName(sessionId);
   return env.SESSIONS.get(id);
+}
+
+export async function loadSessionIfExists(env: Env, sessionId: string): Promise<Session | null> {
+  const stub = stubFor(env, sessionId);
+  const res = await stub.fetch(new Request(`https://do${SESSION_PATH}`, { method: "GET" }));
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Failed to load session: ${res.status}`);
+  return (await res.json()) as Session;
 }
 
 export async function loadSession(request: Request, env: Env): Promise<SessionLoadResult> {

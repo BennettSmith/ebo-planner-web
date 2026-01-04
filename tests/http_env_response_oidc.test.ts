@@ -4,6 +4,7 @@ import { requireEnv } from "../src/worker/lib/env";
 import { basicAuthHeader, readJson } from "../src/worker/lib/http";
 import { jsonResponse, redirectResponse } from "../src/worker/lib/response";
 import { clearOAuthCookie, readOAuthCookie, requireBaseUrl, setOAuthCookie } from "../src/worker/lib/oidc";
+import { sanitizeReturnToPath } from "../src/worker/lib/return_to";
 
 describe("env", () => {
   it("requireEnv returns value or throws", () => {
@@ -49,8 +50,8 @@ describe("oidc cookie helpers", () => {
     expect(() => requireBaseUrl({ BASE_URL: "   " } as any)).toThrow(/BASE_URL/);
   });
 
-  it("setOAuthCookie + readOAuthCookie roundtrip", () => {
-    const setCookie = setOAuthCookie(env, "google", "s1", "n1");
+  it("setOAuthCookie + readOAuthCookie roundtrip (v2)", () => {
+    const setCookie = setOAuthCookie(env, "google", "s1", "n1", "/trip.html?tripId=t1");
     // Cookie header needs just name=value.
     const cookieNV = setCookie.split(";")[0];
     const req = new Request("https://x", { headers: { Cookie: cookieNV } });
@@ -58,6 +59,7 @@ describe("oidc cookie helpers", () => {
     expect(parsed?.provider).toBe("google");
     expect(parsed?.state).toBe("s1");
     expect(parsed?.nonce).toBe("n1");
+    expect(parsed?.returnToPath).toBe("/trip.html?tripId=t1");
   });
 
   it("makeState/makeNonce return url-safe tokens", async () => {
@@ -74,6 +76,9 @@ describe("oidc cookie helpers", () => {
     // wrong version
     expect(
       readOAuthCookie(new Request("https://x", { headers: { Cookie: `__Host-ebo_oauth=${encodeURIComponent('{"v":2}')}` } })),
+    ).toBeNull();
+    expect(
+      readOAuthCookie(new Request("https://x", { headers: { Cookie: `__Host-ebo_oauth=${encodeURIComponent('{"v":3,"provider":"google","state":"s","nonce":"n","createdAt":1}')}` } })),
     ).toBeNull();
     // bad provider
     expect(
@@ -93,6 +98,22 @@ describe("oidc cookie helpers", () => {
     const s = clearOAuthCookie();
     expect(s).toContain("__Host-ebo_oauth=");
     expect(s).toContain("Max-Age=0");
+  });
+});
+
+describe("returnTo sanitization", () => {
+  const env = { BASE_URL: "https://example.com/" } as any;
+
+  it("allows same-origin absolute URLs and returns path+query", () => {
+    expect(sanitizeReturnToPath(env, "https://example.com/trip.html?tripId=t1")).toBe("/trip.html?tripId=t1");
+  });
+
+  it("allows absolute paths", () => {
+    expect(sanitizeReturnToPath(env, "/trips.html")).toBe("/trips.html");
+  });
+
+  it("rejects cross-origin URLs", () => {
+    expect(sanitizeReturnToPath(env, "https://evil.example.com/steal")).toBe("/");
   });
 });
 
